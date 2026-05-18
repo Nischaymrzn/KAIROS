@@ -1,0 +1,57 @@
+# HoopIQ ML/DL layer — CPU-only. Target Python 3.11 (works on 3.10).
+# Install torch CPU first so no CUDA wheel is pulled:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements.txt
+
+# core
+numpy
+pandas
+pyarrow
+scipy
+scikit-learn
+joblib
+pyyaml
+tqdm
+
+# gradient boosting (all CPU)
+xgboost
+lightgbm
+catboost
+
+# deep learning (torch; CPU or CUDA build — see README)
+torch
+
+# explainability + tracking
+shap
+mlflow
+
+# data sources
+nba_api
+requests
+datasets            # huggingface, 2015-16 movement (Phase 2)
+kaggle              # 2014-15 shot logs (Phase 2)
+
+# archive handling — SportVU game logs ship as .7z (src/movement/extract.py)
+py7zr
+
+# trajectory work (Phase 2)
+tslearn
+
+# hyperparameter tuning
+optuna
+
+# inference + game API
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+sqlmodel
+
+# notebooks + plotting
+jupyter
+matplotlib
+seaborn
+
+# tabular deep learning (thesis model comparison; GPU)
+rtdl_revisiting_models
+pytorch-tabnet
