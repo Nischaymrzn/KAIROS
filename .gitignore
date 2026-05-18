@@ -1,0 +1,121 @@
+# data + model artifacts are never committed — re-fetch / retrain.
+# NOTE: models/ is ignored, so the frozen production bundles are NOT in git.
+# They are currently IRREPLACEABLE (the data that produced them is off-disk),
+# so they must be backed up off-machine. Manifests are force-added below.
+# leading slashes matter: bare `data/` and `models/` match a directory of that
+# name at ANY depth, which silently excluded the whole of src/data/ and
+# src/models/ from version control. Anchor them to the repo root.
+/data/
+/models/
+mlruns/
+mlflow.db
+catboost_info/
+
+# node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# large binary design references (look-only, never loaded — see HANDOFF.md §2).
+# 50 MB each and duplicated across client/ and frontend/; keep them on disk,
+# out of history. The PNG references ARE tracked.
+*.glb
+
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+*.egg-info/
+
+# notebooks output checkpoints
+notebooks/.ipynb_checkpoints/
+
+# reports: keep MODEL_CARD + tracked figures, ignore scratch
+reports/figures/_scratch/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# dashboard build output
+dashboard/dist/
+
+# 8.2 GB of unrelated files that landed inside the repo; never stage them
+Downloads/
+
+# Character model binaries — drop a player.glb in client/public/models to use one.
+# See client/public/models/README.md. Not tracked: multi-megabyte and optional.
+client/public/models/*.glb
+client/public/models/*.glb.disabled
+
+# design references and generated checks are kept local
+client/designs/
+frontend/designs/
+dashboard/.ssrcheck/
+
+# common generated, temporary, and binary artifacts
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+.cache/
+.coverage
+coverage/
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+*.sqlite
+*.sqlite3
+*.db
+*.parquet
+*.csv
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.exe
+*.dll
+*.so
+*.dylib
+*.mp4
+*.mov
+*.MOV
+*.pptx
+*.xlsx
+
+# generated research outputs and local-only project artifacts
+/experiments/
+/reports/
+/.pytest_cache/
+
+# thesis exports and project notes; keep the repository focused on runnable code
+/*.md
+/*.html
+/*.mhtml
+/*.pdf
+/*.docx
+*.md
+
+# local agent configuration
+.claude/
+.agent/
+.claude/.agent/*.md
+
+# local environment files and thesis copies inside app folders
+.env
+*.local
+/client/*.pdf
