@@ -1,0 +1,188 @@
+# HoopIQ — single source of truth for the ML pipeline.
+# No hard-coded constants in notebooks or src; everything tunable lives here.
+
+seed: 42
+
+paths:
+  data_raw: data/raw
+  data_interim: data/interim
+  data_processed: data/processed
+  data_movement: data/movement
+  models: models
+  reports: reports
+  figures: reports/figures
+  mlruns: mlruns
+  # local source corpus (already downloaded — see DATA_INVENTORY.md)
+  nba_shots_dir: "data/shot_data/NBA_Shots_04_25"
+  sqlite: "data/nba.sqlite (1)/nba.sqlite"
+  shot_logs_2014_15: "data/shot_data/shot_logs.csv"
+  box_scores_dir: "data/NBA-Data-2010-2024"
+
+data:
+  tier: AB                      # A | AB | ABC  (graceful degradation)
+  # Window validated by `python -m src.data.validate` (reports/DATA_VALIDATION.md).
+  # The spine runs 2003-04 -> 2024-25, but the local play-by-play (source of the
+  # shot-clock proxy, our only enrichment that helps) stops at 2022-23 and is
+  # missing 2012-13, so the widest usable run is 2013-14 -> 2022-23.
+  #
+  # We trained the full 10-season window and MEASURED it (2026-07-09):
+  #   train 1,637,704 shots  -> val AUC 0.6777, test AUC 0.6709
+  #   train   598,514 shots  -> val AUC 0.6779, test AUC 0.6737
+  # 2.7x more HISTORY bought nothing and generalised worse: era drift. Recency
+  # beats volume. So instead of widening backwards we moved the window FORWARD.
+  #
+  # 2023-24 -> 2025-26 come from the NBA API (shotchartdetail + playbyplayv3),
+  # since the local corpus ends at 2024-25 and the local play-by-play at 2022-23.
+  # The API pull was validated to reproduce the local data exactly on 2022-23
+  # (217,220 shots identical; PBP event counts exact). See src/data/nba_api_*.py.
+  #
+  # PRODUCTION = v7 (recent window). The full 2014-15 -> 2025-26 window was tested
+  # (2026-07-09) and REVERTED — it lowered the score (chronological test AUC 0.6957
+  # vs v7 0.7001; era drift). The random-shuffle "mixed" split was also measured
+  # and gave 0.6895 — LOWER still, and nowhere near 0.80. See
+  # reports/figures/split_experiment.json and reports/EDA.md.
+  #
+  # v8 (2026-08-13) WIDENS the window to the full proposal span. Three things
+  # changed at once and only together do they make it work:
+  #   1. era features (season_year, lagged league 3PT share / mean distance /
+  #      FG%) so the model knows which era a shot comes from
+  #   2. recency weighting (features.recency_decay) so recent seasons dominate
+  #   3. src/data/contest.py recovers REAL defender distance, dribbles and touch
+  #      time for 2014-15 and 2015-16, which only enter the model if those
+  #      seasons are in the training window
+  # era_drift.py measured (1)+(2) alone at 0.7002 vs v7's 0.7001. (3) is new.
+  # PRODUCTION = v8 (promoted 2026-08-13), the full proposal span. The gate in
+  # src/models/export.py was OVERRIDDEN to promote it, and the justification is
+  # recorded in reports/RESULTS.md 5a. In short: the accuracy gain alone
+  # (+0.0008 test AUC) sits inside the 0.0021 margin, but it is uniform rather
+  # than marginal, favouring v8 on all four aggregate test metrics, all six
+  # disjoint court zones, and eight of eight model families on validation; and
+  # v8 carries a capability v7 lacks, since it can split on defender distance.
+  # v7 remains frozen at models/production/v7/ and the promotion is reversible.
+  seasons_train: ["2014-15", "2015-16", "2016-17", "2017-18", "2018-19",
+                  "2019-20", "2020-21", "2021-22", "2022-23", "2023-24"]
+  season_val: "2024-25"
+  season_test: "2025-26"
+  enrich_score_margin: true     # real score margin + home flag from SQLite PBP
+  enrich_opponent: true         # opponent season-to-date def-rating + pace
+  enrich_possession: true       # shot-clock proxy + transition, from PBP possessions
+  enrich_rhythm: true           # strictly-prior in-game shooter form (hot hand)
+  enrich_rest: true             # rest days / back-to-back / games in last 7
+  # full target window (the prototype uses the subset above)
+  window_start: "2013-14"
+  window_end: "2024-25"
+
+# ---- feature selection (pre-registered ablation rule: keep a group only if it
+# adds >= 0.001 val AUC or improves val Brier; see reports/figures/ablation.json)
+features:
+  drop_groups: ["rhythm", "rest", "combine", "game_state", "tracking_volume"]
+  # exponential decay per season of distance from the newest training season,
+  # passed as sample_weight to every family that accepts one. 0.8 is the value
+  # era_drift.py validated and what production v8 uses; 0 disables weighting,
+  # which is what the narrow v7 window used, having almost no era span to correct.
+  recency_decay: 0.8
+  # measured 2026-07-09 (LightGBM, validation season):
+  #   possession +0.0015 AUC  KEEP   | rhythm  +0.0002  noise
+  #   rest       -0.0002 AUC  drop   | combine -0.0003  drop
+  #   game_state -0.0001 AUC  drop
+  #
+  # "dead" added 2026-08-05 (audit). NOT an ablation verdict — these 8 columns
+  # (defender_distance, contest_category, dribbles, touch_time, dribble_rate and
+  # their flags) are CONSTANT across the production window, because per-shot
+  # defender distance and pre-shot movement are public only for 2014-15/2015-16.
+  # Zero variance => zero information, and it made the dashboard's defender
+  # slider look like it fed the core model when it cannot. See features/groups.py.
+  #
+  # Dropped groups are still computed (kept in the parquet for analysis) but are
+  # excluded from feature_meta.json, so no model sees them.
+
+dev:
+  sample_rows: 0                # >0 = subsample the spine for a fast smoke test
+
+# ---- classical models (CPU) ----
+models:
+  logreg: { max_iter: 2000, C: 1.0 }
+  rf: { n_estimators: 300, max_depth: 14, min_samples_leaf: 20, n_jobs: -1 }
+  xgboost:
+    tree_method: hist
+    device: cuda            # GPU; falls back to cpu if unavailable
+    n_estimators: 4000
+    learning_rate: 0.02
+    max_depth: 7
+    subsample: 0.8
+    colsample_bytree: 0.8
+    early_stopping_rounds: 150
+    n_jobs: -1
+  lightgbm:                 # kept on CPU (pip wheel has no GPU/OpenCL build)
+    # Optuna-tuned 2026-07-09 (30 trials, val AUC 0.6766). Pre-tune values:
+    #   learning_rate 0.02, num_leaves 95, feature_fraction 0.8, bagging_fraction 0.8
+    n_estimators: 5000
+    learning_rate: 0.0237
+    num_leaves: 244
+    max_depth: 13
+    min_child_samples: 184
+    feature_fraction: 0.578
+    bagging_fraction: 0.578
+    reg_lambda: 0.00171
+    n_jobs: -1
+  catboost:
+    # Optuna-tuned 2026-07-09 (25 trials, val AUC 0.6765 ~= untuned 0.6766 —
+    # at the ceiling). Pre-tune values: learning_rate 0.02 (no l2/random_strength).
+    iterations: 5000
+    learning_rate: 0.0100
+    depth: 7
+    l2_leaf_reg: 7.55
+    random_strength: 1.672
+    bagging_temperature: 0.833
+    task_type: GPU          # falls back to CPU if unavailable
+
+# ---- deep model (GPU if available) ----
+deep:
+  use_gpu: true
+  train_sample: 0          # 0 = full train set (GPU makes full epochs feasible)
+  batch_size: 8192
+  max_epochs: 80
+  lr: 0.0015
+  weight_decay: 0.00001
+  patience: 8
+  hidden: [512, 256, 128]
+  dropout: [0.35, 0.25, 0.15]
+
+# ---- movement / trajectory module (Phase 2, 2015-16 SportVU only) ----
+movement:
+  sample_games: 60          # how many game files to extract (636 available)
+  window_sec: 4.0           # seconds of movement before the release
+  max_len: 24               # waypoints per trajectory (pad/truncate)
+  min_frames: 10            # skip shots with fewer aligned frames
+  n_clusters: 8             # canonical move templates
+  gru_hidden: 96
+  gru_epochs: 60
+  obs_frac: 0.5             # observed prefix fed to the sequence model
+
+# ---- hyperparameter tuning (Optuna, validation-AUC objective) ----
+tune:
+  n_trials_catboost: 25     # GPU; ~40s/trial
+  n_trials_lightgbm: 30     # CPU; ~15s/trial
+  early_stopping: 80        # rounds without val improvement
+
+# ---- calibration / quality bands ----
+calibration:
+  methods: ["sigmoid", "isotonic"]
+  # Fraction of the VALIDATION season (by game order, so the latest games) held
+  # back for fitting the calibrator only. The remainder drives early stopping and
+  # model selection, so the calibrator is never fitted on data the booster stopped
+  # against — predictions there are optimistic, which makes isotonic under-correct
+  # on test.
+  #
+  # 0.0 reproduces v7 exactly and is the CURRENT DEFAULT, deliberately: the Murphy
+  # decomposition measured v7's reliability at 0.0001 of a 0.2137 Brier score
+  # (`make skill`), i.e. only 0.05% of the error is miscalibration, so the
+  # available gain here is at most ~0.0001. The separation is implemented and
+  # correct; enable it (0.3) when you next retrain and want the cleaner protocol,
+  # and re-measure rather than assuming an improvement.
+  holdout_frac: 0.0
+quality_bands:                  # calibrated probability -> label
+  excellent: 0.60
+  good: 0.50
+  average: 0.40
+  poor: 0.30
