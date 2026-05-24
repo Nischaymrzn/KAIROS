@@ -1,0 +1,38 @@
+{
+  "name": "hoopiq-court",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "HoopIQ 3D court \u2014 foundation layer (fresh build)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "posecheck": "tsx scripts/posecheck.ts",
+    "animcheck": "tsx scripts/animcheck.ts",
+    "scenariocheck": "tsx scripts/scenariocheck.ts",
+    "check": "tsx scripts/scenariocheck.ts && tsx scripts/posecheck.ts && tsx scripts/handcheck.ts && tsx scripts/animcheck.ts && tsx scripts/gamecheck.ts && tsx scripts/rendercheck.tsx && tsx scripts/askcheck.ts && tsx scripts/typecheck-fonts.ts",
+    "gamecheck": "tsx scripts/gamecheck.ts",
+    "rendercheck": "tsx scripts/rendercheck.tsx",
+    "handcheck": "tsx scripts/handcheck.ts",
+    "fontcheck": "tsx scripts/typecheck-fonts.ts",
+    "askcheck": "tsx scripts/askcheck.ts"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.99.0",
+    "@react-three/fiber": "^8.15.19",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.18.1",
+    "three": "^0.161.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@types/three": "^0.161.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
+  }
+}
