@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1f2937;
+  --border: #374151;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent-blue: #3b82f6;
+  --accent-teal: #14b8a6;
+  --accent-green: #22c55e;
+  --accent-amber: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-orange: #f97316;
+  --court-floor: #c8a96e;
+  --court-lines: #ffffff;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card { @apply bg-bg-secondary rounded-xl border border-line p-6; }
+  .label { @apply text-[11px] uppercase tracking-[1.5px] text-txt-muted font-medium; }
+  .stat { @apply font-bold tabular-nums; }
+  .h-title { @apply font-semibold tracking-tight; }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium
+           bg-bg-tertiary border border-line text-txt-primary transition-colors duration-150
+           hover:border-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue/50;
+  }
+  .btn-primary { @apply bg-accent-blue border-accent-blue text-white hover:bg-blue-500; }
+  .fade-in { animation: fade 150ms ease-out; }
+}
+
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+input[type="range"] {
+  @apply w-full h-1.5 rounded-full appearance-none bg-bg-tertiary outline-none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  @apply appearance-none w-4 h-4 rounded-full bg-accent-blue cursor-pointer;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+input[type="range"]::-moz-range-thumb {
+  @apply w-4 h-4 rounded-full bg-accent-blue cursor-pointer border-0;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 6px; }
