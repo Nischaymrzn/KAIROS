@@ -1,0 +1,171 @@
+/**
+ * DESIGN TOKENS — the single source of truth for every UI surface.
+ *
+ * WHY THIS EXISTS. Before this file the client had exactly two CSS custom
+ * properties (--bg-top, --bg-bottom) and ~1,100 lines of hand-written CSS with
+ * literal hex values repeated across shell.css / styles.css / ux.css. That is the
+ * mechanical cause of styling drift: there was no way to change "the card
+ * background" in one place. Every new surface re-invented its own spacing and
+ * colour, so pages stopped looking like one product.
+ *
+ * RULES
+ *  1. No component may hard-code a colour, radius, shadow, or spacing value.
+ *     If a token is missing, add it here rather than inlining a hex.
+ *  2. `constants/theme.ts` stays authoritative for the 3D SCENE (wood, key blue,
+ *     rim orange). These tokens are for the DOM chrome that sits over it. The two
+ *     are deliberately separate: the court must look like a court regardless of
+ *     UI theme, and re-theming the UI must never repaint the hardwood.
+ *  3. The accent is pulled from the court itself (#3d4fc4 boundary blue) so the
+ *     DOM and the 3D scene read as one product.
+ *
+ * The scale is a 4px base — every spacing value is a multiple, which is what
+ * makes unrelated components align without anyone measuring.
+ */
+
+:root {
+  /* ---- surface: dark by default, because the 3D arena behind it is dark ---- */
+  --surface-0: #0b0d13;          /* app background (behind everything) */
+  --surface-1: #12151d;          /* panel */
+  --surface-2: #181c27;          /* card */
+  --surface-3: #212633;          /* raised card / hover */
+  --surface-glass: rgba(18, 21, 29, 0.82);  /* over the 3D canvas */
+  --surface-scrim: rgba(6, 8, 12, 0.66);
+
+  /* ---- line ---- */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.20);
+
+  /* ---- text: 4 steps is enough; more invites inconsistency ---- */
+  --text-primary: #f2f4f8;
+  --text-secondary: #a8b0c0;
+  --text-tertiary: #6f7789;
+  --text-inverse: #0b0d13;
+
+  /* ---- brand: taken from the court boundary blue so DOM matches the 3D ---- */
+  --accent: #4a5ee0;
+  --accent-hover: #5d6ff0;
+  --accent-muted: rgba(74, 94, 224, 0.16);
+  --accent-border: rgba(74, 94, 224, 0.42);
+
+  /* ---- quality scale: ONE definition, shared by panels, charts and the heat
+         map. Previously duplicated as literals in CourtPage and elsewhere. ---- */
+  --q-excellent: #35c26e;
+  --q-good: #6fcf97;
+  --q-average: #f2c94c;
+  --q-poor: #f2994a;
+  --q-very-poor: #eb5757;
+
+  /* semantic aliases so components never reach for a quality colour by accident */
+  --success: var(--q-excellent);
+  --warning: var(--q-average);
+  --danger: var(--q-very-poor);
+  --info: var(--accent);
+
+  /* ---- spacing: 4px base ---- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* ---- radius ---- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+
+  /* ---- elevation: dark UI needs light borders more than heavy shadows ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+
+  /* Inter is loaded in index.html with display=swap; the system stack below is
+     the fallback so text still renders if the font is unavailable. Inter rather
+     than Open Sans because the interface is dense with numbers, and Inter ships
+     tabular figures — a probability that changes from 48% to 51% should not
+     shift the layout of the row it sits in. */
+  --font-sans: Inter, "Open Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Display face, for names, section labels and the numbers that carry a
+     reading. Space Grotesk has the wider apertures and the squarer figures that
+     make a percentage legible at a glance, while Inter is the better face for
+     the paragraphs of explanation this interface is full of. Pairing them puts
+     each one where it is actually better rather than picking one and living
+     with its weak side. */
+  --font-display: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 26px;
+  --fs-2xl: 34px;
+  --fs-3xl: 46px;
+
+  --lh-tight: 1.15;
+  --lh-normal: 1.5;
+
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* numeric readouts must not jitter as digits change */
+  --tnum: "tnum" 1, "lnum" 1;
+
+  /* ---- motion. Durations are short on purpose: this UI sits over a live 3D
+         scene, and slow DOM transitions read as lag rather than polish. ---- */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 380ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ---- layout ---- */
+  --nav-w: 68px;
+  --panel-w: 340px;
+  --z-canvas: 0;
+  --z-panel: 10;
+  --z-nav: 20;
+  --z-overlay: 40;
+  --z-toast: 60;
+}
+
+/* Respect the OS setting. Every animation in the shot system is written so that
+   removing it degrades to an instant state change, never to a broken layout. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 1ms;
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-slow: 1ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Touch targets: 44px is the accessibility floor. Applied at the token layer so
+   every control inherits it rather than each component remembering. */
+@media (pointer: coarse) {
+  :root {
+    --control-min: 44px;
+    --nav-w: 100%;          /* the rail becomes a bottom bar on touch */
+  }
+}
+@media (pointer: fine) {
+  :root { --control-min: 30px; }
+}
